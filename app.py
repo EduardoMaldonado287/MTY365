@@ -1,7 +1,8 @@
-from flask import Flask, jsonify, request, render_template,request, redirect, url_for
+from flask import Flask, jsonify, request, Response
 from pymongo import MongoClient
 from bson.json_util import dumps
 import json
+from bson.objectid import ObjectId
 
 app = Flask(__name__)
 
@@ -26,7 +27,7 @@ def form():
 
 
 
-git 
+#git 
 @app.route('/add_spot', methods=['POST'])
 def add_spot():
     spotInfo = request.get_json()  # Assumes the request contains a JSON payload with the new document data
@@ -49,6 +50,71 @@ def get_spots():
         spots.append(json.loads(json.dumps(spot, default=str)))
     return jsonify(spots)
 
+@app.route('/update_spot/<id>', methods= ['PATCH'])
+def update_spot(id):
+    
+    title = request.form['title']
+    author = request.form['author']
+    location = request.form['location']
+    category = request.form['category']
+    image= request.form['image']
+    description= request.form['description']
+    try: 
+        dbResponse = collection.update_one(
+			{"_id": ObjectId(id)},
+			{"$set": {'title': title, 
+             'author': author,
+             'location': location,
+             'category': category,
+             'image': image,
+             'description': description
+             }}
+		)
+        
+        if dbResponse.modified_count == 1:
+            return Response(
+			response= json.dumps(
+				{"message": "object updated"}),
+				status= 200,
+				mimetype= "application/json"
+			)
+            
+    except Exception as ex:
+        print("****")
+        print(ex)
+        print("****")
+        
+        return Response(
+			response= json.dumps(
+				{"message": "unable to update object"}),
+			status=500,
+			mimetype="application/json"
+			)
+
+@app.route("/delete_spot/<id>", methods = ["DELETE"])
+def delete_spot(id):
+    
+    try: 
+        dbResponse = collection.delete_one({"_id": ObjectId(id)})
+        return Response(
+			response= json.dumps(
+				{"message": "user deleted", "id": f"{id}"}),
+				status= 200,
+				mimetype= "application/json"
+			)
+        
+    except Exception as ex:
+        print("****")
+        print(ex)
+        print("****")
+        
+        return Response(
+			response= json.dumps(
+				{"message": "unable to delete object"}),
+			status=500,
+			mimetype="application/json"
+			)
+        
 if __name__ == '__main__':
     app.run()
 
